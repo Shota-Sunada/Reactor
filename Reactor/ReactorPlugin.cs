@@ -20,7 +20,7 @@ namespace Reactor;
 /// <summary>
 /// Reactor's main class.
 /// </summary>
-[BepInAutoPlugin("gg.reactor.api")]
+[BepInAutoPlugin("gg.reactor-sunada.api")]
 [BepInProcess("Among Us.exe")]
 public partial class ReactorPlugin : BasePlugin
 {
