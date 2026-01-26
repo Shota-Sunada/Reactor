@@ -98,7 +98,7 @@ public partial class ReactorPlugin : BasePlugin
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F5))
+            if (Input.GetKeyDown(KeyCode.F2))
             {
                 Plugin!.Log.LogInfo("Reloading all configs");
 
