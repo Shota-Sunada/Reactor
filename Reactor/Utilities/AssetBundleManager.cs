@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -103,14 +102,22 @@ public static class AssetBundleManager
 
     private static bool TryLoadResource(Assembly assembly, string fileName, [NotNullWhen(true)] out Il2CppStructArray<byte>? data)
     {
-        var resourceName = assembly.GetManifestResourceNames().SingleOrDefault(n => n.EndsWith(fileName, StringComparison.Ordinal));
+        string? resourceName = null;
+        foreach (var n in assembly.GetManifestResourceNames())
+        {
+            if (n.EndsWith(fileName, StringComparison.Ordinal))
+            {
+                resourceName = n;
+                break;
+            }
+        }
         if (resourceName != null)
         {
             Debug($"Loading an asset bundle from {resourceName}");
 
             using var stream = assembly.GetManifestResourceStream(resourceName) ?? throw new InvalidOperationException("Resource stream was null");
 
-            var length = (int) stream.Length;
+            var length = (int)stream.Length;
             data = new Il2CppStructArray<byte>(length);
             if (stream.Read(data.ToSpan()) < length) throw new IOException("Failed to read in full");
 

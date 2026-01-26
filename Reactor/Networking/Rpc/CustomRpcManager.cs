@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Hazel;
@@ -78,11 +77,34 @@ public class CustomRpcManager
     [HarmonyPatch]
     internal static class HandleRpcPatch
     {
-        private static List<Type> InnerNetObjectTypes { get; } = typeof(InnerNetObject).Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(InnerNetObject)) && x != typeof(LobbyBehaviour)).ToList();
+        private static List<Type> InnerNetObjectTypes
+        {
+            get
+            {
+                var types = new List<Type>();
+                foreach (var type in typeof(InnerNetObject).Assembly.GetTypes())
+                {
+                    if (type.IsSubclassOf(typeof(InnerNetObject)) && type != typeof(LobbyBehaviour))
+                    {
+                        types.Add(type);
+                    }
+                }
+                return types;
+            }
+        }
 
         public static IEnumerable<MethodBase> TargetMethods()
         {
-            return InnerNetObjectTypes.Select(x => x.GetMethod(nameof(InnerNetObject.HandleRpc), AccessTools.allDeclared)).Where(m => m != null)!;
+            var methods = new List<MethodBase>();
+            foreach (var type in InnerNetObjectTypes)
+            {
+                var method = type.GetMethod(nameof(InnerNetObject.HandleRpc), AccessTools.allDeclared);
+                if (method != null)
+                {
+                    methods.Add(method);
+                }
+            }
+            return methods;
         }
 
         public static bool Prefix(InnerNetObject __instance, [HarmonyArgument(0)] byte callId, [HarmonyArgument(1)] MessageReader reader)

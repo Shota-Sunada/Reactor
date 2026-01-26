@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using HarmonyLib;
 
 namespace Reactor.Patches.Miscellaneous;
@@ -11,9 +10,20 @@ internal static class CustomServersPatch
     {
         const string Domain = "among.us";
 
-        return ServerManager.Instance.CurrentRegion?.TryCast<StaticHttpRegionInfo>() is { } regionInfo &&
-               regionInfo.PingServer.EndsWith(Domain, StringComparison.Ordinal) &&
-               regionInfo.Servers.All(serverInfo => serverInfo.Ip.EndsWith(Domain, StringComparison.Ordinal));
+        if (ServerManager.Instance.CurrentRegion?.TryCast<StaticHttpRegionInfo>() is { } regionInfo &&
+               regionInfo.PingServer.EndsWith(Domain, StringComparison.Ordinal))
+        {
+            foreach (var serverInfo in regionInfo.Servers)
+            {
+                if (!serverInfo.Ip.EndsWith(Domain, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return false;
     }
 
     [HarmonyPatch(typeof(AuthManager._CoConnect_d__4), nameof(AuthManager._CoConnect_d__4.MoveNext))]

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using TMPro;
@@ -15,14 +14,22 @@ internal static class CursorPosPatch
 {
     public static IEnumerable<MethodBase> TargetMethods()
     {
-        return AccessTools.GetDeclaredMethods(typeof(TextMeshProExtensions)).Where(m => m.Name == nameof(TextMeshProExtensions.CursorPos));
+        var methods = new List<MethodBase>();
+        foreach (var method in AccessTools.GetDeclaredMethods(typeof(TextMeshProExtensions)))
+        {
+            if (method.Name == nameof(TextMeshProExtensions.CursorPos))
+            {
+                methods.Add(method);
+            }
+        }
+        return methods;
     }
 
     public static bool Prefix(TextMeshPro self, ref Vector2 __result)
     {
         if (self.textInfo == null || self.textInfo.lineCount == 0 || self.textInfo.lineInfo[0].characterCount <= 0)
         {
-            __result = self.GetTextInfo(" ").lineInfo.First().lineExtents.max;
+            __result = self.GetTextInfo(" ").lineInfo[0].lineExtents.max;
             self.text = string.Empty;
             return false;
         }

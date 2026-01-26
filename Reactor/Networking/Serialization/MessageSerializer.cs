@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Hazel;
 using Reactor.Networking.Extensions;
 using UnityEngine;
@@ -42,7 +41,7 @@ public static class MessageSerializer
         }
         else
         {
-            var messageConverter = (UnsafeMessageConverter) Activator.CreateInstance(type)!;
+            var messageConverter = (UnsafeMessageConverter)Activator.CreateInstance(type)!;
             MessageConverters.Add(messageConverter);
         }
     }
@@ -56,7 +55,14 @@ public static class MessageSerializer
     {
         if (!MessageConverterMap.TryGetValue(type, out var value))
         {
-            value = MessageConverters.SingleOrDefault(x => x.CanConvert(type));
+            foreach (var converter in MessageConverters)
+            {
+                if (converter.CanConvert(type))
+                {
+                    value = converter;
+                    break;
+                }
+            }
 
             if (value == null)
                 return null;
@@ -86,7 +92,7 @@ public static class MessageSerializer
             return null;
 
         var generic = builder.MakeGenericType(type.GetGenericArguments());
-        value = (UnsafeMessageConverter) Activator.CreateInstance(generic)!;
+        value = (UnsafeMessageConverter)Activator.CreateInstance(generic)!;
 
         MessageConverters.Add(value);
         MessageConverterMap.Add(type, value);
@@ -177,7 +183,7 @@ public static class MessageSerializer
     /// <param name="reader">The <see cref="MessageReader"/> to read from.</param>
     /// <typeparam name="T">The type to be read.</typeparam>
     /// <returns>A generic <typeparamref name="T"/> value from the <paramref name="reader"/>.</returns>
-    public static T Deserialize<T>(this MessageReader reader) => (T) reader.Deserialize(typeof(T));
+    public static T Deserialize<T>(this MessageReader reader) => (T)reader.Deserialize(typeof(T));
 
     /// <summary>
     /// Deserializes an <see cref="object"/> of <paramref name="objectType"/> from the <paramref name="reader"/>.

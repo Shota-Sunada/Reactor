@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using Reactor.Utilities;
@@ -32,14 +33,14 @@ public static class ReactorVersionShower
         Text.transform.position = pos;
     }
 
-    private static readonly ResolutionManager.ResolutionChangedHandler _resolutionChangedHandler = (Action<float, int, int, bool>) ((aspectRatio, _, _, _) =>
+    private static readonly ResolutionManager.ResolutionChangedHandler _resolutionChangedHandler = (Action<float, int, int, bool>)((aspectRatio, _, _, _) =>
     {
         SetMainMenuPositionFromAspect(aspectRatio);
     });
 
     internal static void Initialize()
     {
-        SceneManager.add_sceneLoaded((Action<Scene, LoadSceneMode>) ((scene, _) =>
+        SceneManager.add_sceneLoaded((Action<Scene, LoadSceneMode>)((scene, _) =>
         {
             var original = UnityEngine.Object.FindObjectOfType<VersionShower>();
             if (!original)
@@ -63,7 +64,7 @@ public static class ReactorVersionShower
             if (scene.name == "MainMenu")
             {
                 ResolutionManager.add_ResolutionChanged(_resolutionChangedHandler);
-                SetMainMenuPositionFromAspect(Screen.width / (float) Screen.height);
+                SetMainMenuPositionFromAspect(Screen.width / (float)Screen.height);
             }
             else
             {
@@ -94,16 +95,24 @@ public static class ReactorVersionShower
     /// </summary>
     public static void UpdateText()
     {
-        if (Text == null) return;
-        Text.text = "Reactor " + Version.Parse(ReactorPlugin.Version).WithoutBuild();
-        Text.text += "\nBepInEx " + Paths.BepInExVersion.WithoutBuild();
-        Text.text += "\nMods: " + IL2CPPChainloader.Instance.Plugins.Count;
+        if (Text == null)
+        {
+            return;
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("Reactor ").Append(Version.Parse(ReactorPlugin.Version).WithoutBuild().ToString()).Append('\n');
+        sb.Append("BepInEx ").Append(Paths.BepInExVersion.WithoutBuild().ToString()).Append('\n');
+        sb.Append("Mods: ").Append(IL2CPPChainloader.Instance.Plugins.Count);
 
         var creditsText = ReactorCredits.GetText(ReactorCredits.Location.MainMenu);
         if (creditsText != null)
         {
-            Text.text += "\n" + creditsText;
+            sb.Append('\n');
+            sb.Append(creditsText);
         }
+
+        Text.text = sb.ToString();
 
         TextUpdated?.Invoke(Text);
     }

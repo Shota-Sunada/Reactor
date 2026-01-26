@@ -42,12 +42,12 @@ public class SingleThreadedInProcessEmitExecutor : IExecutor
         var host = new InProcessHost(executeParameters.BenchmarkCase, hostLogger, executeParameters.Diagnoser);
 
         var exitCode = ExecuteCore(host, executeParameters);
-        return ((ExecuteResult) AccessTools.Method(typeof(ExecuteResult), "FromRunResults").Invoke(null, new object[] { host.RunResults, exitCode })!)!;
+        return ((ExecuteResult)AccessTools.Method(typeof(ExecuteResult), "FromRunResults").Invoke(null, [host.RunResults, exitCode])!)!;
     }
 
-    private int ExecuteCore(IHost host, ExecuteParameters parameters)
+    private static int ExecuteCore(IHost host, ExecuteParameters parameters)
     {
-        var generatedAssembly = ((InProcessEmitArtifactsPath) parameters.BuildResult.ArtifactsPaths).GeneratedAssembly;
+        var generatedAssembly = ((InProcessEmitArtifactsPath)parameters.BuildResult.ArtifactsPaths).GeneratedAssembly;
 
         return RunnableProgram.Run(parameters.BenchmarkId, generatedAssembly, parameters.BenchmarkCase, host);
     }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Configuration;
 using Reactor.Utilities;
@@ -9,11 +10,16 @@ internal sealed class ConfigTab : BaseTab
 {
     public override string Name => "Config";
 
+    private List<IGrouping<string, KeyValuePair<ConfigDefinition, ConfigEntryBase>>>? _cachedConfigs;
+
     public override void OnGUI()
     {
-        var configs = PluginSingleton<ReactorPlugin>.Instance.Config.Concat(PluginSingleton<DebuggerPlugin>.Instance.Config);
+        _cachedConfigs ??= PluginSingleton<ReactorPlugin>.Instance.Config
+            .Concat(PluginSingleton<DebuggerPlugin>.Instance.Config)
+            .GroupBy(e => e.Key.Section)
+            .ToList();
 
-        foreach (var section in configs.GroupBy(e => e.Key.Section))
+        foreach (var section in _cachedConfigs)
         {
             GUILayout.Label(section.Key);
 

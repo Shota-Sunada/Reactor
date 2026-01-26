@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Reflection;
 using BepInEx.Unity.IL2CPP;
 
@@ -18,7 +17,20 @@ public static class PluginSingleton<T> where T : BasePlugin
     /// </summary>
     public static T Instance
     {
-        get => _instance ??= IL2CPPChainloader.Instance.Plugins.Values.Select(x => x.Instance).OfType<T>().Single();
+        get
+        {
+            if (_instance != null) return _instance;
+
+            foreach (var plugin in IL2CPPChainloader.Instance.Plugins.Values)
+            {
+                if (plugin.Instance is T instance)
+                {
+                    _instance = instance;
+                    return _instance;
+                }
+            }
+            throw new InvalidOperationException($"Could not find instance for {typeof(T)}");
+        }
         set
         {
             if (_instance == value) return;

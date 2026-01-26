@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using BepInEx;
 using BepInEx.Unity.IL2CPP;
@@ -97,11 +96,18 @@ public static class ModList
     {
         if (ReactorConnection.Instance != null) throw new InvalidOperationException("Can't refresh the mod list during a connection");
 
-        Current = IL2CPPChainloader.Instance.Plugins.Values
-            .Select(pluginInfo => GetById(pluginInfo.Metadata.GUID))
-            .OrderByDescending(x => x.Id == ReactorPlugin.Id)
-            .ThenBy(x => x.Id, StringComparer.Ordinal)
-            .ToArray();
+        var mods = new List<Mod>();
+        foreach (var pluginInfo in IL2CPPChainloader.Instance.Plugins.Values)
+        {
+            mods.Add(GetById(pluginInfo.Metadata.GUID));
+        }
+        mods.Sort((a, b) =>
+        {
+            if (a.Id == ReactorPlugin.Id) return -1;
+            if (b.Id == ReactorPlugin.Id) return 1;
+            return string.Compare(a.Id, b.Id, StringComparison.Ordinal);
+        });
+        Current = mods.ToArray();
 
         _modByNetId.Clear();
         _netIdByMod.Clear();
@@ -116,8 +122,25 @@ public static class ModList
             netId++;
         }
 
-        IsAnyModRequiredOnAllClients = Current.Any(m => m.IsRequiredOnAllClients);
-        IsAnyModDisableServerAuthority = Current.Any(m => (m.Flags & ModFlags.DisableServerAuthority) != 0);
+        IsAnyModRequiredOnAllClients = false;
+        foreach (var m in Current)
+        {
+            if (m.IsRequiredOnAllClients)
+            {
+                IsAnyModRequiredOnAllClients = true;
+                break;
+            }
+        }
+
+        IsAnyModDisableServerAuthority = false;
+        foreach (var m in Current)
+        {
+            if ((m.Flags & ModFlags.DisableServerAuthority) != 0)
+            {
+                IsAnyModDisableServerAuthority = true;
+                break;
+            }
+        }
 
         var debug = new StringBuilder("Mod list:");
         foreach (var mod in Current)
@@ -150,7 +173,7 @@ public static class ModList
         foreach (var existingPlugin in IL2CPPChainloader.Instance.Plugins.Values)
         {
             if (existingPlugin.Instance == null) continue;
-            OnPluginLoad(existingPlugin, (BasePlugin) existingPlugin.Instance);
+            OnPluginLoad(existingPlugin, (BasePlugin)existingPlugin.Instance);
         }
 
         IL2CPPChainloader.Instance.PluginLoad += (pluginInfo, _, plugin) => OnPluginLoad(pluginInfo, plugin);

@@ -1,8 +1,8 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
@@ -26,17 +26,35 @@ internal static class Build
     {
         Directory.CreateDirectory(TempPath);
 
-        var ignoredExtensions = new[] { ".meta", ".manifest", ".dll", ".cs", ".exe", ".tps" };
+        var ignoredExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".meta", ".manifest", ".dll", ".cs", ".exe", ".tps" };
 
-        var builds = Directory.GetDirectories(AssetBundlesPath)
-            .Select(directoryPath => new AssetBundleBuild
+        var directories = Directory.GetDirectories(AssetBundlesPath);
+        var builds = new AssetBundleBuild[directories.Length];
+
+        for (int i = 0; i < directories.Length; i++)
+        {
+            var directoryPath = directories[i];
+            var allFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+            var assetNames = new List<string>();
+
+            foreach (var file in allFiles)
+            {
+                if (!ignoredExtensions.Contains(Path.GetExtension(file)))
+                {
+                    assetNames.Add(file);
+                }
+            }
+
+            builds[i] = new AssetBundleBuild
             {
                 assetBundleName = Path.GetFileName(directoryPath),
-                assetNames = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories).Where(p => !ignoredExtensions.Contains(Path.GetExtension(p))).ToArray(),
-            })
-            .ToArray();
+                assetNames = assetNames.ToArray(),
+            };
+        }
 
-        Debug.Log($"Building {builds.Length} asset bundle(s) ({string.Join(", ", builds.Select(b => b.assetBundleName))})");
+        var bundleNames = new List<string>();
+        foreach (var b in builds) bundleNames.Add(b.assetBundleName);
+        Debug.Log($"Building {builds.Length} asset bundle(s) ({string.Join(", ", bundleNames)})");
 
         var options = BuildAssetBundleOptions.StrictMode;
 

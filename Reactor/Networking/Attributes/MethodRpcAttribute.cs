@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
@@ -59,25 +58,25 @@ public sealed class MethodRpcAttribute : Attribute
         if (_registeredAssemblies.Contains(assembly)) return;
         _registeredAssemblies.Add(assembly);
 
-        var methods = assembly.GetTypes()
-            .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public));
-
-        foreach (var method in methods)
+        foreach (var type in assembly.GetTypes())
         {
-            var attribute = method.GetCustomAttribute<MethodRpcAttribute>();
-            if (attribute == null)
+            foreach (var method in type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
             {
-                continue;
-            }
+                var attribute = method.GetCustomAttribute<MethodRpcAttribute>();
+                if (attribute == null)
+                {
+                    continue;
+                }
 
-            try
-            {
-                var customRpc = new MethodRpc(plugin, method, attribute.Id, attribute.SendOption, attribute.LocalHandling);
-                PluginSingleton<ReactorPlugin>.Instance.CustomRpcManager.Register(customRpc);
-            }
-            catch (Exception e)
-            {
-                Warning($"Failed to register {method.FullDescription()}: {e}");
+                try
+                {
+                    var customRpc = new MethodRpc(plugin, method, attribute.Id, attribute.SendOption, attribute.LocalHandling);
+                    PluginSingleton<ReactorPlugin>.Instance.CustomRpcManager.Register(customRpc);
+                }
+                catch (Exception e)
+                {
+                    Warning($"Failed to register {method.FullDescription()}: {e}");
+                }
             }
         }
     }

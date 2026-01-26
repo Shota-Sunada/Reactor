@@ -1,7 +1,8 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using HarmonyLib;
 using InnerNet;
 
@@ -25,14 +26,39 @@ internal static class ServerInfoFixesPatch
         try
         {
             var i = 0;
-            var servers = Dns.GetHostAddresses(__instance.Fqdn)
-                .Distinct()
-                .Where(ipAddress => ipAddress.AddressFamily == AddressFamily.InterNetwork)
-                .Select(ipAddress => new ServerInfo($"{__instance.Name}-{i++}", ipAddress.ToString(), __instance.Port, __instance.UseDtls))
-                .ToArray();
+            var hostAddresses = Dns.GetHostAddresses(__instance.Fqdn);
+            var serverList = new List<ServerInfo>();
+            var addedIps = new List<IPAddress>();
+            foreach (var ipAddress in hostAddresses)
+            {
+                if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    bool exists = false;
+                    foreach (var added in addedIps)
+                    {
+                        if (added.Equals(ipAddress))
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists)
+                    {
+                        addedIps.Add(ipAddress);
+                        serverList.Add(new ServerInfo($"{__instance.Name}-{i++}", ipAddress.ToString(), __instance.Port, __instance.UseDtls));
+                    }
+                }
+            }
+            var servers = serverList.ToArray();
 
             __instance.cachedServers = servers;
-            Info($"Populated {__instance.Name} ({__instance.Fqdn}:{__instance.Port}) with {servers.Length} server(s) {{{servers.Select(x => x.ToString()).Join()}}}");
+            var serverStrings = new StringBuilder();
+            for (var j = 0; j < servers.Length; j++)
+            {
+                if (j > 0) serverStrings.Append(", ");
+                serverStrings.Append(servers[j].ToString());
+            }
+            Info($"Populated {__instance.Name} ({__instance.Fqdn}:{__instance.Port}) with {servers.Length} server(s) {{{serverStrings}}}");
         }
         catch (Exception e)
         {

@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Text;
 using AmongUs.Data;
 using AmongUs.InnerNet.GameDataMessages;
 using BepInEx.Unity.IL2CPP.Utils;
@@ -42,20 +42,20 @@ internal static class ClientPatches
 
             if (reader.Tag == byte.MaxValue)
             {
-                var flag = (ReactorGameDataFlag) reader.ReadByte();
+                var flag = (ReactorGameDataFlag)reader.ReadByte();
                 switch (flag)
                 {
                     case ReactorGameDataFlag.SetKickReason:
-                    {
-                        var reason = reader.ReadString();
-                        Debug("Received SetKickReason: " + reason);
-                        if (ReactorConnection.Instance != null)
                         {
-                            ReactorConnection.Instance.LastKickReason = reason;
-                        }
+                            var reason = reader.ReadString();
+                            Debug("Received SetKickReason: " + reason);
+                            if (ReactorConnection.Instance != null)
+                            {
+                                ReactorConnection.Instance.LastKickReason = reason;
+                            }
 
-                        break;
-                    }
+                            break;
+                        }
                 }
 
                 reader.Recycle();
@@ -64,7 +64,7 @@ internal static class ClientPatches
                 return false;
             }
 
-            if (reader.Tag == (byte) GameDataTypes.SceneChangeFlag && ReactorConnection.Instance?.Syncer == Syncer.Host)
+            if (reader.Tag == (byte)GameDataTypes.SceneChangeFlag && ReactorConnection.Instance?.Syncer == Syncer.Host)
             {
                 var clientId = reader.ReadPackedInt32();
                 var clientData = innerNetClient.FindClientById(clientId);
@@ -112,11 +112,18 @@ internal static class ClientPatches
 
                                     const int ChatMessageLimit = 100;
 
-                                    var chatText = $"{playerName} tried joining without the following mods:";
-                                    foreach (var mod in ModList.Current.Where(m => m.IsRequiredOnAllClients))
+                                    var chatTextBuilder = new StringBuilder();
+                                    chatTextBuilder.Append(playerName);
+                                    chatTextBuilder.Append(" tried joining without the following mods:");
+                                    foreach (var mod in ModList.Current)
                                     {
-                                        chatText += $"\n- {mod}";
+                                        if (mod.IsRequiredOnAllClients)
+                                        {
+                                            chatTextBuilder.Append("\n- ");
+                                            chatTextBuilder.Append(mod);
+                                        }
                                     }
+                                    var chatText = chatTextBuilder.ToString();
 
                                     HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, chatText, false);
 
@@ -127,7 +134,7 @@ internal static class ClientPatches
                                             : chatText;
 
                                         // Write SendChat directly instead of using RpcSendChat so we can call AddChat ourselves
-                                        var messageWriter = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte) RpcCalls.SendChat, SendOption.Reliable);
+                                        var messageWriter = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)RpcCalls.SendChat, SendOption.Reliable);
                                         messageWriter.Write(truncatedChatText);
                                         messageWriter.EndMessage();
                                     }
@@ -182,7 +189,7 @@ internal static class ClientPatches
                     var writer = MessageWriter.Get(SendOption.Reliable);
                     writer.StartMessage(Tags.GameData);
                     writer.Write(innerNetClient.GameId);
-                    writer.StartMessage((byte) GameDataTypes.SceneChangeFlag);
+                    writer.StartMessage((byte)GameDataTypes.SceneChangeFlag);
                     writer.WritePacked(innerNetClient.ClientId);
                     writer.Write(__instance.sceneName);
 
@@ -272,37 +279,37 @@ internal static class ClientPatches
             if (ReactorConnection.Instance!.Syncer == null)
             {
                 var parentBuffer = reader.Parent.Buffer;
-                var sendOption = (SendOption) parentBuffer[0];
+                var sendOption = (SendOption)parentBuffer[0];
                 if (sendOption == SendOption.Reliable)
                 {
-                    var id = (ushort) ((parentBuffer[1] << 8) + parentBuffer[2]);
+                    var id = (ushort)((parentBuffer[1] << 8) + parentBuffer[2]);
                     isFirst = id == 1;
                 }
             }
 
             if (reader.Tag == byte.MaxValue)
             {
-                var flag = (ReactorMessageFlags) reader.ReadByte();
+                var flag = (ReactorMessageFlags)reader.ReadByte();
 
                 switch (flag)
                 {
                     case ReactorMessageFlags.Handshake:
-                    {
-                        ModdedHandshakeS2C.Deserialize(reader, out var serverName, out var serverVersion, out var pluginCount);
-
-                        if (isFirst)
                         {
-                            Info($"Connected to a modded server ({serverName} {serverVersion}, {pluginCount} plugins)");
-                            ReactorConnection.Instance.Syncer = Syncer.Server;
-                        }
-                        else
-                        {
-                            Warning("Modded handshake came in late");
-                            __instance.DisconnectWithReason("Reactor handshake was sent out of order, please try connecting again.");
-                        }
+                            ModdedHandshakeS2C.Deserialize(reader, out var serverName, out var serverVersion, out var pluginCount);
 
-                        break;
-                    }
+                            if (isFirst)
+                            {
+                                Info($"Connected to a modded server ({serverName} {serverVersion}, {pluginCount} plugins)");
+                                ReactorConnection.Instance.Syncer = Syncer.Server;
+                            }
+                            else
+                            {
+                                Warning("Modded handshake came in late");
+                                __instance.DisconnectWithReason("Reactor handshake was sent out of order, please try connecting again.");
+                            }
+
+                            break;
+                        }
                 }
 
                 return false;

@@ -39,7 +39,7 @@ public class AssetBundleBenchmarks
         AssetBundle.UnloadAllAssetBundles(true);
     }
 
-    private AssetBundle LoadAll(AssetBundle assetBundle)
+    private static AssetBundle LoadAll(AssetBundle assetBundle)
     {
         ArgumentNullException.ThrowIfNull(assetBundle);
 
@@ -81,7 +81,7 @@ public class AssetBundleBenchmarks
     public AssetBundle LoadFromMemory_Span()
     {
         using var stream = GetResourceStream();
-        var length = (int) stream.Length;
+        var length = (int)stream.Length;
 
         var array = new Il2CppStructArray<byte>(length);
         if (stream.Read(array.ToSpan()) < length) throw new IOException("Failed to read in full");

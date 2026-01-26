@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Il2CppInterop.Common;
@@ -28,7 +27,7 @@ public static class ReflectionExtensions
     {
         var il2CppMethodField = Il2CppInteropUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(methodInfo);
         if (il2CppMethodField == null) throw new ArgumentException($"'{methodInfo.Name}' is not an il2cpp method", nameof(methodInfo));
-        var il2CppMethod = (IntPtr) il2CppMethodField.GetValue(null)!;
+        var il2CppMethod = (IntPtr)il2CppMethodField.GetValue(null)!;
 
         return new Il2CppMethodInfo(IL2CPP.il2cpp_method_get_object(il2CppMethod, IntPtr.Zero));
     }
@@ -90,7 +89,22 @@ public static class ReflectionExtensions
     /// <returns>An array of <see cref="MethodInfo"/> objects representing all methods defined for the current <see cref="Type"/> that match the specified binding constraints.</returns>
     public static IEnumerable<MethodBase> GetMethods(this Type type, BindingFlags bindingFlags, Type returnType, params Type[] parameterTypes)
     {
-        return type.GetMethods(bindingFlags).Where(x => x.ReturnType == returnType && x.GetParameters().Select(x => x.ParameterType).SequenceEqual(parameterTypes));
+        foreach (var method in type.GetMethods(bindingFlags))
+        {
+            if (method.ReturnType != returnType) continue;
+            var parameters = method.GetParameters();
+            if (parameters.Length != parameterTypes.Length) continue;
+            bool match = true;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].ParameterType != parameterTypes[i])
+                {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) yield return method;
+        }
     }
 
     /// <summary>

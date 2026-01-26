@@ -91,21 +91,39 @@ public readonly struct Mod : IEquatable<Mod>
 
     internal static bool Validate(IReadOnlyCollection<Mod> clientMods, IReadOnlyCollection<Mod> hostMods, [NotNullWhen(false)] out string? reason)
     {
-        var clientMissing = hostMods.Where(mod => mod.IsRequiredOnAllClients && !clientMods.Contains(mod)).ToArray();
-        var hostMissing = clientMods.Where(mod => mod.IsRequiredOnAllClients && !hostMods.Contains(mod)).ToArray();
+        var clientModSet = new HashSet<Mod>(clientMods);
+        var hostModSet = new HashSet<Mod>(hostMods);
 
-        if (clientMissing.Length != 0 || hostMissing.Length != 0)
+        var clientMissing = new List<Mod>();
+        foreach (var mod in hostMods)
+        {
+            if (mod.IsRequiredOnAllClients && !clientModSet.Contains(mod))
+            {
+                clientMissing.Add(mod);
+            }
+        }
+
+        var hostMissing = new List<Mod>();
+        foreach (var mod in clientMods)
+        {
+            if (mod.IsRequiredOnAllClients && !hostModSet.Contains(mod))
+            {
+                hostMissing.Add(mod);
+            }
+        }
+
+        if (clientMissing.Count != 0 || hostMissing.Count != 0)
         {
             var message = new StringBuilder();
 
-            if (clientMissing.Length != 0)
+            if (clientMissing.Count != 0)
             {
                 message.Append("You are missing: ");
                 message.AppendJoin(", ", clientMissing.Select(x => x.ToString()));
                 message.AppendLine();
             }
 
-            if (hostMissing.Length != 0)
+            if (hostMissing.Count != 0)
             {
                 message.Append("Host is missing: ");
                 message.AppendJoin(", ", hostMissing.Select(x => x.ToString()));

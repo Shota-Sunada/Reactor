@@ -1,4 +1,3 @@
-using System.Linq;
 using AmongUs.GameOptions;
 using HarmonyLib;
 using Il2CppInterop.Runtime;
@@ -13,12 +12,12 @@ internal static class GameOptionsPatches
 {
     public static void Initialize()
     {
-        var maxImpostors = (Il2CppStructArray<int>) Enumerable.Repeat((int) byte.MaxValue, byte.MaxValue).ToArray();
-        NormalGameOptionsV09.MaxImpostors = maxImpostors;
+        var maxImpostors = new Il2CppStructArray<int>(byte.MaxValue);
+        for (int i = 0; i < maxImpostors.Length; i++) maxImpostors[i] = byte.MaxValue;
         NormalGameOptionsV09.MaxImpostors = maxImpostors;
 
-        var minPlayers = (Il2CppStructArray<int>) Enumerable.Repeat(1, byte.MaxValue).ToArray();
-        NormalGameOptionsV09.MinPlayers = minPlayers;
+        var minPlayers = new Il2CppStructArray<int>(byte.MaxValue);
+        for (int i = 0; i < minPlayers.Length; i++) minPlayers[i] = 1;
         NormalGameOptionsV09.MinPlayers = minPlayers;
     }
 

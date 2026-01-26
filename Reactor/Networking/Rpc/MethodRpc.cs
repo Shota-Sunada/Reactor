@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -47,7 +47,7 @@ public class MethodRpc : UnsafeCustomRpc
                 throw new ArgumentException("Static method rpc requires at least one argument", nameof(method));
             }
 
-            var innerNetObjectType = parameters.First().ParameterType;
+            var innerNetObjectType = parameters[0].ParameterType;
 
             if (!typeof(InnerNetObject).IsAssignableFrom(innerNetObjectType))
             {
@@ -111,7 +111,7 @@ public class MethodRpc : UnsafeCustomRpc
     /// <inheritdoc />
     public override void UnsafeWrite(MessageWriter writer, object? data)
     {
-        var args = (object[]) data!;
+        var args = (object[])data!;
         MessageSerializer.Serialize(writer, args);
     }
 
@@ -133,7 +133,7 @@ public class MethodRpc : UnsafeCustomRpc
     /// <inheritdoc />
     public override void UnsafeHandle(InnerNetObject innerNetObject, object? data)
     {
-        var args = (object[]) data!;
+        var args = (object[])data!;
         var result = _handle(innerNetObject, args);
 
         if (result is IEnumerator enumerator)
@@ -164,10 +164,14 @@ public class MethodRpc : UnsafeCustomRpc
         // Used as target when hooking, sends the method rpc
         DynamicMethod GenerateSender()
         {
-            var parameterTypes = parameters.Select(x => x.ParameterType);
-            if (!isStatic) parameterTypes = parameterTypes.Prepend(InnerNetObjectType);
+            var parameterTypes = new Type[parameters.Length + (isStatic ? 0 : 1)];
+            if (!isStatic) parameterTypes[0] = InnerNetObjectType;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                parameterTypes[i + (isStatic ? 0 : 1)] = parameters[i].ParameterType;
+            }
 
-            var dynamicMethod = new DynamicMethod($"Sender<{method.GetID(simple: true)}>", method.ReturnType, parameterTypes.ToArray());
+            var dynamicMethod = new DynamicMethod($"Sender<{method.GetID(simple: true)}>", method.ReturnType, parameterTypes);
 
             if (!isStatic) dynamicMethod.DefineParameter(0, ParameterAttributes.None, "this");
 
@@ -281,6 +285,6 @@ public class MethodRpc : UnsafeCustomRpc
             return dynamicMethod.CreateDelegate<HandleDelegate>();
         }
 
-        return GenerateHandler((DynamicMethod) detour.GenerateTrampoline());
+        return GenerateHandler((DynamicMethod)detour.GenerateTrampoline());
     }
 }

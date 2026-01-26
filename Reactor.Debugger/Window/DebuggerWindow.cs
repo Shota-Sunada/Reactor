@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Linq;
 using AmongUs.Data;
 using BepInEx.Unity.IL2CPP.Utils;
 using Il2CppInterop.Runtime.Attributes;
@@ -43,8 +42,8 @@ internal sealed class DebuggerWindow : MonoBehaviour
             {
                 static unsafe void Corrupt(Il2CppObjectBase o)
                 {
-                    var x = (IntPtr*) o.Pointer;
-                    x[0] = (IntPtr) 0xF00;
+                    var x = (IntPtr*)o.Pointer;
+                    x[0] = (IntPtr)0xF00;
                 }
 
                 static IEnumerator CoCrash()
@@ -59,14 +58,28 @@ internal sealed class DebuggerWindow : MonoBehaviour
                         }
                     }
 
-                    var usable = FindObjectsOfType<MonoBehaviour>().First(x => x.TryCast<IUsable>() != null);
+                    var playerControl = PlayerControl.LocalPlayer;
+                    if (!playerControl) yield break;
+
+                    var allObjects = FindObjectsOfType<MonoBehaviour>();
+                    MonoBehaviour? usable = null;
+                    foreach (var x in allObjects)
+                    {
+                        if (x.TryCast<IUsable>() != null)
+                        {
+                            usable = x;
+                            break;
+                        }
+                    }
+
                     if (!usable)
                     {
                         Error("Failed to find an IUsable to crash with");
                         yield break;
                     }
 
-                    var cloned = Instantiate(usable, PlayerControl.LocalPlayer.transform.position, default);
+                    var cloned = Instantiate(usable, playerControl.transform.position, default);
+                    if (!cloned) yield break;
 
                     Warning($"Crashing with {cloned.name}");
 

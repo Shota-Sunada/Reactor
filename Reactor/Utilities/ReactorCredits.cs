@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using Reactor.Patches;
 using Reactor.Utilities.Extensions;
+using UnityEngine;
 
 namespace Reactor.Utilities;
 
@@ -28,6 +29,9 @@ public static class ReactorCredits
     }
 
     private static readonly List<ModIdentifier> _modIdentifiers = [];
+    private static readonly List<string> _modTextCache = [];
+    private static readonly Dictionary<Location, string?> _locationCache = [];
+    private static int _lastUpdateFrame = -1;
 
     /// <summary>
     /// Represents the location of where the credit is shown.
@@ -71,7 +75,16 @@ public static class ReactorCredits
             return;
         }
 
-        if (_modIdentifiers.Any(m => m.Name == name))
+        bool alreadyRegistered = false;
+        foreach (var m in _modIdentifiers)
+        {
+            if (m.Name == name)
+            {
+                alreadyRegistered = true;
+                break;
+            }
+        }
+        if (alreadyRegistered)
         {
             Error($"Mod \"{name}\" is already registered in {nameof(ReactorCredits)}.");
             return;
@@ -100,8 +113,19 @@ public static class ReactorCredits
     /// <param name="shouldShow"><inheritdoc cref="Register(string,string,bool,System.Func{Location,bool})" path="/param[@name='shouldShow']"/></param>
     public static void Register<T>(Func<Location, bool>? shouldShow) where T : BasePlugin
     {
-        var pluginInfo = IL2CPPChainloader.Instance.Plugins.Values.SingleOrDefault(p => p.TypeName == typeof(T).FullName)
-                         ?? throw new ArgumentException("Couldn't find the metadata for the provided plugin type", nameof(T));
+        PluginInfo? pluginInfo = null;
+        foreach (var p in IL2CPPChainloader.Instance.Plugins.Values)
+        {
+            if (p.TypeName == typeof(T).FullName)
+            {
+                pluginInfo = p;
+                break;
+            }
+        }
+        if (pluginInfo == null)
+        {
+            throw new ArgumentException("Couldn't find the metadata for the provided plugin type", nameof(T));
+        }
 
         var metadata = pluginInfo.Metadata;
 
@@ -110,14 +134,39 @@ public static class ReactorCredits
 
     internal static string? GetText(Location location)
     {
-        var modTexts = _modIdentifiers.Where(m => m.ShouldShow(location)).Select(m => m.Text).ToArray();
-        if (modTexts.Length == 0) return null;
-
-        return location switch
+        var currentFrame = Time.frameCount;
+        if (_lastUpdateFrame != currentFrame)
         {
-            Location.MainMenu => string.Join('\n', modTexts),
-            Location.PingTracker => ("<space=3em>" + string.Join(", ", modTexts)).Size("50%").Align("center"),
-            _ => throw new ArgumentOutOfRangeException(nameof(location), location, null),
-        };
+            _locationCache.Clear();
+            _lastUpdateFrame = currentFrame;
+        }
+
+        if (_locationCache.TryGetValue(location, out var cached))
+        {
+            return cached;
+        }
+
+        _modTextCache.Clear();
+        foreach (var m in _modIdentifiers)
+        {
+            if (m.ShouldShow(location))
+            {
+                _modTextCache.Add(m.Text);
+            }
+        }
+
+        string? result = null;
+        if (_modTextCache.Count > 0)
+        {
+            result = location switch
+            {
+                Location.MainMenu => string.Join('\n', _modTextCache),
+                Location.PingTracker => ("<space=3em>" + string.Join(", ", _modTextCache)).Size("50%").Align("center"),
+                _ => throw new ArgumentOutOfRangeException(nameof(location), location, null),
+            };
+        }
+
+        _locationCache[location] = result;
+        return result;
     }
 }

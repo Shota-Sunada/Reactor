@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Reactor.Utilities.Extensions;
 
@@ -29,8 +28,17 @@ public static class RandomExtensions
     /// <returns>A random item from the <paramref name="input"/> enumerable.</returns>
     public static T? Random<T>(this IEnumerable<T> input)
     {
-        var list = input as IList<T> ?? input.ToList();
-        return list.Count == 0 ? default : list[UnityEngine.Random.Range(0, list.Count)];
+        if (input is IList<T> list)
+        {
+            return list.Count == 0 ? default : list[UnityEngine.Random.Range(0, list.Count)];
+        }
+
+        var newList = new List<T>();
+        foreach (var item in input)
+        {
+            newList.Add(item);
+        }
+        return newList.Count == 0 ? default : newList[UnityEngine.Random.Range(0, newList.Count)];
     }
 
     /// <summary>
@@ -42,7 +50,16 @@ public static class RandomExtensions
     /// <returns>A random item from the <paramref name="input"/> enumerable.</returns>
     public static T? Random<T>(this IEnumerable<T> input, Random random)
     {
-        var list = input as IList<T> ?? input.ToList();
-        return list.Count == 0 ? default : list[random.Next(0, list.Count)];
+        if (input is IList<T> list)
+        {
+            return list.Count == 0 ? default : list[random.Next(0, list.Count)];
+        }
+
+        var newList = new List<T>();
+        foreach (var item in input)
+        {
+            newList.Add(item);
+        }
+        return newList.Count == 0 ? default : newList[random.Next(0, newList.Count)];
     }
 }

@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Text;
 using HarmonyLib;
 using UnityEngine;
@@ -19,9 +19,16 @@ internal static class HttpPatches
         stringBuilder.Append(Version);
         stringBuilder.Append(';');
 
-        var mods = ModList.Current.Where(m => m.IsRequiredOnAllClients).ToArray();
+        var mods = new List<Mod>();
+        foreach (var m in ModList.Current)
+        {
+            if (m.IsRequiredOnAllClients)
+            {
+                mods.Add(m);
+            }
+        }
 
-        stringBuilder.Append(mods.Length);
+        stringBuilder.Append(mods.Count);
 
         foreach (var mod in mods)
         {
@@ -75,7 +82,7 @@ internal static class HttpPatches
             // So we need to match everything that contains /api/games
             if (path.Contains("/api/games"))
             {
-                __result.add_completed((Action<AsyncOperation>) (_ =>
+                __result.add_completed((Action<AsyncOperation>)(_ =>
                 {
                     if (!HttpUtils.IsSuccess(__instance.responseCode)) return;
 
@@ -118,7 +125,7 @@ internal static class HttpPatches
                 __instance.HostPrivateButton.transform.FindChild("Inactive").GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0.5f);
 
                 var onClick = __instance.HostPrivateButton.OnClick = new Button.ButtonClickedEvent();
-                onClick.AddListener((Action) MakePublicDisallowedPopup.Show);
+                onClick.AddListener((Action)MakePublicDisallowedPopup.Show);
 
                 if (AmongUsClient.Instance.AmHost && AmongUsClient.Instance.IsGamePublic)
                 {
