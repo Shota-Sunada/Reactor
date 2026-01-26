@@ -8,8 +8,8 @@
 
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 
-        <VersionPrefix>2.5.0</VersionPrefix>
-        <VersionSuffix>dev</VersionSuffix>
+        <VersionPrefix>3.3.4</VersionPrefix>
+        <VersionSuffix>SND</VersionSuffix>
 
         <Authors>NuclearPowered</Authors>
         <PackageIcon>icon.png</PackageIcon>
