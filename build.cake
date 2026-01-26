@@ -1,4 +1,5 @@
 var target = Argument("target", "Build");
+var configuration = Argument("configuration", "Release");
 
 var workflow = BuildSystem.GitHubActions.Environment.Workflow;
 var buildId = workflow.RunNumber;
@@ -9,11 +10,11 @@ Task("Build")
 {
     var settings = new DotNetBuildSettings
     {
-        Configuration = "Release",
+        Configuration = configuration,
         MSBuildSettings = new DotNetMSBuildSettings()
     };
 
-    if (tag != null) 
+    if (tag != null)
     {
         settings.MSBuildSettings.Version = tag;
     }
