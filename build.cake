@@ -23,7 +23,7 @@ Task("Build")
         settings.MSBuildSettings.VersionSuffix = "ci." + buildId;
     }
 
-    DotNetBuild(".", settings);
+    DotNetBuild("Reactor.sln", settings);
 });
 
 RunTarget(target);

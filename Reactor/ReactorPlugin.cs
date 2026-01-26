@@ -10,7 +10,6 @@ using Reactor.Networking;
 using Reactor.Networking.Attributes;
 using Reactor.Networking.Rpc;
 using Reactor.Patches;
-using Reactor.Patches.Miscellaneous;
 using Reactor.Utilities;
 using Reactor.Utilities.Attributes;
 using UnityEngine;
@@ -67,7 +66,6 @@ public partial class ReactorPlugin : BasePlugin
         this.AddComponent<Dispatcher>();
 
         ReactorVersionShower.Initialize();
-        FreeNamePatch.Initialize();
         DefaultBundle.Load();
 
         SceneManager.add_sceneLoaded((Action<Scene, LoadSceneMode>) ((scene, _) =>
